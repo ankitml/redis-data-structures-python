@@ -73,7 +73,6 @@ class RedisList(MutableSequence, RedisDSBase):
             self[index] = uid
             self.remove(uid)
 
-
     def __len__(self):
         return self.c.llen(self.key)
 
