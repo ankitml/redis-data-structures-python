@@ -1,4 +1,5 @@
 from collections.abc import MutableSequence
+from collections import Iterable
 import string
 import random
 from redis import ResponseError
@@ -6,6 +7,7 @@ import uuid
 
 DECODER = lambda byte:byte.decode("utf-8")
 CHARACTERS = string.ascii_letters + string.punctuation  + string.digits
+IS_ITERABLE = lambda v:isinstance(v, Iterable)
 
 
 class RedisDSBase(object):
@@ -63,19 +65,18 @@ class RedisList(MutableSequence, RedisDSBase):
         step = slice_obj.step
         if step is not None:
             raise NotImplementedError
-        return self.c.lrange(self.key, start, end)
+        return [DECODER(i) for i in self.c.lrange(self.key, start, end)]
 
     def __getitem__(self, index):
         if isinstance(index, int):
-            val = DECODER(self.c.lindex(self.key, index))
-            return val
+            val = self.c.lindex(self.key, index)
+            if not val:
+                raise IndexError('RedisList index out of range')
+            return DECODER(val)
         if isinstance(index, slice):
             val = self.sliced(index)
             return val
-        raise IndexError('RedisList index out of range')
 
-
-        
     def __setitem__(self, i, v):
         try:
             self.c.lset(self.key, i, v)
@@ -99,8 +100,10 @@ class RedisList(MutableSequence, RedisDSBase):
         """
         self += new_list
         """
-        pass
-
+        raise_if_of_type(new_list, Iterable)
+        if not isinstance(new_list, list):
+            new_list = list(new_list)
+        self.append(new_list)
 
     def __imul__(self, value):
         """
@@ -108,26 +111,37 @@ class RedisList(MutableSequence, RedisDSBase):
         self *= value
         interface
         """
-        pass
+        raise_if_of_type(value, int)
+        if value < 1:
+            self._clear()
+        if value > 1:
+            current = self
+            for i in range(0, value - 1):
+                self.extend(current)
 
-   
-    def copy(self, key=None):
+
+    @classmethod
+    def copy(cls, key=None):
         """
         copies the list into a new key. returns the copied redis list object
         """
-        pass
+        return cls(self.c, key)
 
     def count(self, value):
         """
         returns integer. Number of occurrences of given value
         """
-        pass
+        return sum(1 for i in self if i == value)
 
     def reverse(self):
         """
-        In place reversal of list
         """
-        pass
+        import ipdb
+        ipdb.set_trace()
+        current = self
+        self._clear()
+        # self = current.reverse()
+
 
     def sort(self, key=None, reverse=False):
         """
@@ -150,9 +164,6 @@ class RedisList(MutableSequence, RedisDSBase):
     def __eq__(self, val):
         """
         """
-        pass
-
-    def __iter__(self):
         pass
 
     def __mul__(self, integer):
@@ -184,5 +195,6 @@ class RedisList(MutableSequence, RedisDSBase):
             raise ValueError('some problem occured')
 
 
-
-
+def raise_if_of_type(v, typ):
+    if not isinstance(v, typ):
+        raise TypeError("{0} is not of type ".format(v, typ))
