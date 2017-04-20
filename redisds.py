@@ -32,9 +32,11 @@ class RedisList(MutableSequence, RedisDSBase):
     """
 
 
-    def __init__(self, connection, key=None):
-        if key is None:
-            self.key = "".join(random.choice(CHARACTERS) for x in range(random.randint(12, 16)))
+    def __init__(self, connection, key):
+        if not isinstance(key, str):
+            raise TypeError('key must be a string')
+        # if key is None:
+        #    self.key = "".join(random.choice(CHARACTERS) for x in range(random.randint(12, 16)))
         self.key = key
         self.c = connection
 
@@ -119,7 +121,6 @@ class RedisList(MutableSequence, RedisDSBase):
             for i in range(0, value - 1):
                 self.extend(current)
 
-
     @classmethod
     def copy(cls, key=None):
         """
@@ -136,12 +137,10 @@ class RedisList(MutableSequence, RedisDSBase):
     def reverse(self):
         """
         """
-        import ipdb
-        ipdb.set_trace()
-        current = self
+        current = list(self)
         self._clear()
-        # self = current.reverse()
-
+        current.reverse()
+        self.extend(current)
 
     def sort(self, key=None, reverse=False):
         """
@@ -153,30 +152,31 @@ class RedisList(MutableSequence, RedisDSBase):
         """
         self + other. Other can be a list or a redis list object
         """
-        pass
+        return list(self) + other
 
     def __contains__(self, val):
         """
         returns key in self (index for the value)
         """
-        pass
+        return val in list(self)
 
     def __eq__(self, val):
         """
         """
-        pass
+        return val == list(self)
 
     def __mul__(self, integer):
         """
         list * int
         """
-        pass
+        current = list(self)
+        return current * integer
 
-    def __ne__(self):
+    def __ne__(self, val):
         """
         not equal to
         """
-        pass
+        return not self.__eq__(val)
 
     def insert(self, i, v):
         """
