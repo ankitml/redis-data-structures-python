@@ -182,13 +182,10 @@ class RedisList(MutableSequence, RedisDSBase):
         """
         redis_list.insert(index, element) -- inset this element befre index
         """
-        import ipdb
-        ipdb.set_trace()
-        # get element by its index
-        full_list = self
+        full_list = list(self)
         try:
             post = full_list[i:]
-            res = self.c.ltrim(0,i-1)
+            res = self.c.ltrim(self.key,0,i-1)
             self.append(v)
             self.extend(post)
         except:
