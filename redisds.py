@@ -272,11 +272,18 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         if r == 0:
             raise KeyError(element)
 
-    def symmetric_difference(self):
-        pass
-
+    def symmetric_difference(self, other):
+        union = self.union(other)
+        intersection = self.intersection(other)
+        return union.difference(intersection)
+        
     def symmetric_difference_update(self):
-        pass
+        union = self.union(other)
+        intersection = self.intersection(other)
+        final_set = union.difference(intersection)
+        self.clear()
+        for i in final_set:
+            self.add(i)
 
     def union(self, *others):
         cls = type(self)
@@ -303,9 +310,7 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         pass
 
 
-        
-
-
 def raise_if_of_type(v, typ):
     if not isinstance(v, typ):
         raise TypeError("{0} is not of type ".format(v, typ))
+
