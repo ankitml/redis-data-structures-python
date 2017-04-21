@@ -1,5 +1,4 @@
-from collections.abc import MutableSequence
-from collections import Iterable
+from collections import Iterable, abc
 import string
 import random
 from redis import ResponseError
@@ -11,10 +10,15 @@ IS_ITERABLE = lambda v:isinstance(v, Iterable)
 
 
 class RedisDSBase(object):
-    ...
+
+    def __init__(self, connection, key):
+        if not isinstance(key, str):
+            raise TypeError('key must be a string')
+        self.key = key
+        self.c = connection
 
 
-class RedisList(MutableSequence, RedisDSBase):
+class RedisList(abc.MutableSequence, RedisDSBase):
     """
     Redis backed list, feels like python, behaves like python list
     Drop in replacement for python lists. Persists in redis.
@@ -30,15 +34,6 @@ class RedisList(MutableSequence, RedisDSBase):
     # have an option of marking it non necessary, all commands will have retry logic or ignore
     # till what frequency version management is not needed. probably that is too high according to redis configuration if all functions idempodent
     """
-
-
-    def __init__(self, connection, key):
-        if not isinstance(key, str):
-            raise TypeError('key must be a string')
-        # if key is None:
-        #    self.key = "".join(random.choice(CHARACTERS) for x in range(random.randint(12, 16)))
-        self.key = key
-        self.c = connection
 
     def append(self, *values):
         self.c.rpush(self.key, *values)
@@ -122,11 +117,14 @@ class RedisList(MutableSequence, RedisDSBase):
                 self.extend(current)
 
     @classmethod
-    def copy(cls, key=None):
+    def copy(cls):
         """
         copies the list into a new key. returns the copied redis list object
         """
-        return cls(self.c, key)
+        key = uuid.uuid1().int
+        other = cls(self.c, key)
+        other.extend(list(self))
+        return other
 
     def count(self, value):
         """
@@ -190,6 +188,97 @@ class RedisList(MutableSequence, RedisDSBase):
             self.extend(post)
         except:
             raise ValueError('some problem occured')
+
+
+class RedisSet(abc.MutableSet, RedisDSBase):
+
+    def __contains__(self, element):
+        return self.c.sismember(self.key, element)
+
+    def __iter__(self):
+        s = self.c.smembers(self.key)
+        return (DECODER(i) for i in s)
+        
+    def __len__(self):
+        return self.c.scard(self.key)
+
+    def add(self, element):
+        self.c.sadd(self.key, element)
+
+    def discard(self, element):
+        self.c.srem(self.key, element)
+
+    def copy(self):
+        cls = type(self)
+        key = uuid.uuid1().int
+        other = cls(self.con, key)
+        self.c.sunionstore(key, self.key)
+        return other
+
+    def clear(self):
+        self.c.delete(self.key)
+
+    def difference(self, *others):
+        """
+        Return a new set with elements in the set that are not in *other*.
+        *others* is a list of redis set objects
+        """
+        cls = type(self)
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        key = uuid.uuid1().int
+        other = cls(self.con, key)
+        self.c.sdiffstore(key, [self.key, *other_keys])
+        return other
+
+    def difference_update(self, *others):
+        cls = type(self)
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        if not isinstance(other, cls):
+            raise TypeError('Other should be of type redis set')
+        self.c.sdiffstore(self.key, other_keys)
+
+    def intersection(self, *others):
+        cls = type(self)
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        key = uuid.uuid1().int
+        other = cls(self.con, key)
+        self.c.sinterstore(key, [self.key, *other_keys])
+        return other
+        
+    def intersection_update(self, *others):
+        cls = type(self)
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        if not isinstance(other, cls):
+            raise TypeError('Other should be of type redis set')
+        self.c.sdiffstore(self.key, other_keys)
+        pass
+
+    def isdisjoint(self):
+        pass
+
+    def issubset(self):
+        pass
+
+    def issuperset(self):
+        pass
+
+    def pop(self):
+        pass
+
+    def remove(self):
+        pass
+
+    def symmetric_difference(self):
+        pass
+
+    def symmetric_difference_update(self):
+        pass
+
+    def union(self):
+        pass
+
+    def update(self):
+        pass
 
 
 def raise_if_of_type(v, typ):
