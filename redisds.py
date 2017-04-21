@@ -252,20 +252,25 @@ class RedisSet(abc.MutableSet, RedisDSBase):
             raise TypeError('Other should be of type redis set')
         self.c.sdiffstore(self.key, other_keys)
 
-    def isdisjoint(self):
-        
+    def isdisjoint(self, other):
+        cls = type(self)
+        if not isinstance(other, cls):
+            raise TypeError('Other should be of type redis set')
+        return not bool(self.c.sinter([self.key, other.key]))
 
     def issubset(self):
-        pass
+        return self <= other_set
 
     def issuperset(self):
-        pass
+        return self >= other_set
 
     def pop(self):
-        pass
+        return self.c.spop(self.key)
 
-    def remove(self):
-        pass
+    def remove(self, element):
+        r = self.c.srem(self.key, element)
+        if r == 0:
+            raise KeyError(element)
 
     def symmetric_difference(self):
         pass
@@ -278,13 +283,26 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         other_keys = [o.key for o in others if isinstance(o, cls)]
         key = uuid.uuid1().int
         final = cls(self.con, key)
-        self.db.sunionstore(key, [self.key, *other_keys])
+        self.c.sunionstore(key, [self.key, *other_keys])
         return final
         
-
     def update(self, *others):
         other_keys = [o.key for o in others if isinstance(o, cls)]
-        self.db.sunionstore(self.key, [self.key, *other_keys])
+        self.c.sunionstore(self.key, [self.key, *other_keys])
+
+    def __le__(self, other):
+        pass
+
+    def __lt__(self, other):
+        pass
+
+    def __ge__(self, other):
+        pass
+
+    def __gt__(self, other):
+        pass
+
+
         
 
 
