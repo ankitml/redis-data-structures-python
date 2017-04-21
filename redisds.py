@@ -251,10 +251,9 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         if not isinstance(other, cls):
             raise TypeError('Other should be of type redis set')
         self.c.sdiffstore(self.key, other_keys)
-        pass
 
     def isdisjoint(self):
-        pass
+        
 
     def issubset(self):
         pass
@@ -274,11 +273,19 @@ class RedisSet(abc.MutableSet, RedisDSBase):
     def symmetric_difference_update(self):
         pass
 
-    def union(self):
-        pass
+    def union(self, *others):
+        cls = type(self)
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        key = uuid.uuid1().int
+        final = cls(self.con, key)
+        self.db.sunionstore(key, [self.key, *other_keys])
+        return final
+        
 
-    def update(self):
-        pass
+    def update(self, *others):
+        other_keys = [o.key for o in others if isinstance(o, cls)]
+        self.db.sunionstore(self.key, [self.key, *other_keys])
+        
 
 
 def raise_if_of_type(v, typ):
