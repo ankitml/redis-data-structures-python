@@ -298,17 +298,27 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         self.c.sunionstore(self.key, [self.key, *other_keys])
 
     def __le__(self, other):
-        pass
+        return self.db.sinter([self.key, other.key]) == set(self)
 
     def __lt__(self, other):
-        pass
+        return self <= other_set and self != other_set
 
     def __ge__(self, other):
-        pass
+        return self.c.sinter([self.key, other.key]) == set(other_set)
 
     def __gt__(self, other):
-        pass
+        return self >= other and self != other
 
+    def __eq__(self, other):
+        if len(self) == len(other):
+            if set(self) == set(other):
+                return True
+        return False
+
+    def __ne__(self, other):
+        if type(self) is not type(other)
+            raise TypeError('Other should be of type redis set')
+        return not self == other
 
 def raise_if_of_type(v, typ):
     if not isinstance(v, typ):
