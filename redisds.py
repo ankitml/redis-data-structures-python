@@ -258,11 +258,11 @@ class RedisSet(abc.MutableSet, RedisDSBase):
             raise TypeError('Other should be of type redis set')
         return not bool(self.c.sinter([self.key, other.key]))
 
-    def issubset(self):
-        return self <= other_set
+    def issubset(self, other):
+        return self <= other
 
-    def issuperset(self):
-        return self >= other_set
+    def issuperset(self, other):
+        return self >= other
 
     def pop(self):
         return self.c.spop(self.key)
@@ -298,13 +298,13 @@ class RedisSet(abc.MutableSet, RedisDSBase):
         self.c.sunionstore(self.key, [self.key, *other_keys])
 
     def __le__(self, other):
-        return self.db.sinter([self.key, other.key]) == set(self)
+        return self.c.sinter([self.key, other.key]) == set(self)
 
     def __lt__(self, other):
-        return self <= other_set and self != other_set
+        return self <= other and self != other
 
     def __ge__(self, other):
-        return self.c.sinter([self.key, other.key]) == set(other_set)
+        return self.c.sinter([self.key, other.key]) == set(other)
 
     def __gt__(self, other):
         return self >= other and self != other
