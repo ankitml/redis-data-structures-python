@@ -116,12 +116,12 @@ class RedisList(abc.MutableSequence, RedisDSBase):
             for i in range(0, value - 1):
                 self.extend(current)
 
-    @classmethod
-    def copy(cls):
+    def copy(self):
         """
         copies the list into a new key. returns the copied redis list object
         """
         key = uuid.uuid1().int
+        cls = type(self)
         other = cls(self.c, key)
         other.extend(list(self))
         return other
@@ -188,13 +188,6 @@ class RedisList(abc.MutableSequence, RedisDSBase):
             self.extend(post)
         except:
             raise ValueError('some problem occured')
-
-
-class RedisObjectList(RedisList):
-    """
-    exactly like redis list, but for other types of objects. Redis List works only for strings. Using this class, redis list objects for ints, etc can be created
-    """
-    pass
 
 
 class RedisSet(abc.MutableSet, RedisDSBase):
@@ -367,7 +360,11 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
         return self.c.hvals(self.key)
 
     def copy(self):
-        pass
+        cls = type(self)
+        key = uuid.uuid1().int
+        other = cls(self.con, key)
+        other.c.hmset(self.items())
+        return other
 
     def items(self):
         return self._fetch_dict()
@@ -399,6 +396,23 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
 
     def update(self, other):
         pass
+
+
+class RedisCounter(RedisDict):
+
+    def update(self, other):
+        pass
+
+
+class RedisSortedSet(RedisSet):
+    pass
+
+
+class RedisDeque(RedisList):
+    """
+    list-like container with fast appends and pops on either end
+    """
+    pass
 
 
 
