@@ -1,3 +1,0 @@
-"""
-Persistent python collections
-"""
