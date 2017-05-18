@@ -1,6 +1,6 @@
+import redis
 from collections import abc
-from base import RedisDSBase, IS_ITERABLE, CHARACTERS, DECODER
-from redis import ResponseError
+from redisds.base import RedisDSBase, IS_ITERABLE, CHARACTERS, DECODER
 import uuid
 
 
@@ -63,7 +63,7 @@ class RedisList(abc.MutableSequence, RedisDSBase):
     def __setitem__(self, i, v):
         try:
             self.c.lset(self.key, i, v)
-        except ResponseError:
+        except redis.ResponseError:
             raise IndexError('RedisList index out of range')
 
     def __delitem__(self, index):
