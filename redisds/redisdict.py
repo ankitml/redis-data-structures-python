@@ -1,6 +1,7 @@
-from collections import abc
+from collections import abc, Iterable
 from redis import ResponseError
 import uuid
+from base import RedisDSBase
 
 
 class RedisDict(abc.MutableMapping, RedisDSBase):
@@ -49,8 +50,7 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
         return other
 
     def items(self):
-        return self._fetch_dict()
-
+        return self._fetch_dict().items()
 
     def get(self, k, default=None):
         try:
@@ -83,4 +83,30 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
 class RedisCounter(RedisDict):
 
     def update(self, other):
+        """
+        adds the values instead of replcing them from other
+        other is also key value pair supporting .items() protocol
+        """
+        if isinstance(other, abc.MutableMapping):
+            for key, value in other.items():
+                self.c.hincrby(self.key, key, value)
+        elif isinstance(other, Iterable):
+            for i in other:
+                self.c.hincrby(self.key, i, 1)
+        else:
+            self.c.hincrby(self.key, other)
+
+    def elements(self):
         pass
+
+    def most_common(self, n=None):
+        pass
+
+    def subtract(self, d):
+        pass
+
+    def __repr__(self):
+        return "<{klass} '{key}' {dictionary}>".format(klass='RedisCounter', 
+                                                       key=self.key,
+                                                       dictionary=self._fetch_dict())
+
