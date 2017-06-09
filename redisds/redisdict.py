@@ -1,7 +1,7 @@
 from collections import abc, Iterable
 from redis import ResponseError
 import uuid
-from base import RedisDSBase
+from .base import RedisDSBase
 
 
 class RedisDict(abc.MutableMapping, RedisDSBase):
