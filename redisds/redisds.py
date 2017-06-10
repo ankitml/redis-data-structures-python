@@ -7,6 +7,7 @@ import uuid
 DECODER = lambda byte:byte.decode("utf-8")
 CHARACTERS = string.ascii_letters + string.punctuation  + string.digits
 IS_ITERABLE = lambda v:isinstance(v, Iterable)
+scrub_parent_id = lambda d: {k:v for k,v in d.items() if k != 'parent_id'}
 
 
 def raise_if_of_type(v, typ):
@@ -558,10 +559,25 @@ class RedisTree(RedisDSBase):
         uid = self._extract_id(node)
         del self.data[uid]
 
+    def get_children(self, node_id):
+        """
+        assumes existence of local dict copy
+        """
+        child_ids = [k for k,v in self.local_data.items() if v["parent_id"] == node_id]
+        children = []
+        for child_id in child_ids:
+            child_children = self.get_children(child_id)
+            if child_children:
+                child = {**scrub_parent_id(self.local_data[child_id]), "children": child_children}
+            else:
+                child = scrub_parent_id(self.local_data[child_id])
+            children.append(child)
+        return children or None
+
     def get_tree(self):
-        data = self._get_local_data()
-        import ipdb
-        ipdb.set_trace()
+        self.local_data = self._get_local_data()
+        children = self.get_children(self.root_node_id)
+        return {**scrub_parent_id(self.local_data[self.root_node_id]), "children": self.get_children(self.root_node_id)}
 
     def move_node(self, node):
         pass
