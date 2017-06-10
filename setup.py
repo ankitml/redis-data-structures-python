@@ -6,7 +6,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='redisds',
-    version='0.11',
+    version='0.12',
     packages=find_packages(),
     include_package_data=True,
     license='MIT License',  # example license
