@@ -34,7 +34,5 @@ class TestRedisList:
         rlist.remove('2')
         assert list(map(INT_TO_STR, l)) == rlist
 
-    def test_
-
 
 
