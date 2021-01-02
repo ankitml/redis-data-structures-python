@@ -255,7 +255,7 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
     def __getitem__(self, field):
         val = self.c.hget(self.key, field)
         if val is not None:
-            return val
+            return DECODER(val)
         raise KeyError(str(field))
 
     def __setitem__(self, field, val):
@@ -264,7 +264,7 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
     def __delitem__(self, k):
         if not self.c.hdel(self.key, k):
             raise KeyError(str(k))
-        
+
     def __len__(self):
         return self.c.hlen(self.key)
 
@@ -275,7 +275,7 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
         return self.c.hexists(self.key, k)
 
     def get_local_dict(self):
-        return self.c.hgetall(self.key)
+        return {DECODER(k):DECODER(v) for k,v in self.c.hgetall(self.key).items()}
 
     def __repr__(self):
         return "<{klass} '{key}' {dictionary}>".format(klass='RedisDict', 
@@ -283,10 +283,10 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
                                                        dictionary=self.get_local_dict())
 
     def keys(self):
-        return self.c.hkeys(self.key)
+        return [DECODER(i) for i in self.c.hkeys(self.key)]
 
     def values(self):
-        return self.c.hvals(self.key)
+        return [DECODER(i) for i in self.c.hvals(self.key)]
 
     def copy(self):
         cls = type(self)
@@ -300,7 +300,7 @@ class RedisDict(abc.MutableMapping, RedisDSBase):
 
     def get(self, k, default=None):
         try:
-            return self[k]
+            return DECODER(self[k])
         except KeyError:
             return default
 
